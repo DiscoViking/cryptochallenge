@@ -1,5 +1,7 @@
 package main
 
+import "math"
+
 // Frequency Analysis Function
 
 // English letter frequencies.
@@ -32,6 +34,19 @@ var letterFrequencies = map[byte]float64{
 	'z': 0.00074,
 }
 
+var knownPunctuation = map[byte]struct{}{
+	'.':  struct{}{},
+	':':  struct{}{},
+	';':  struct{}{},
+	'?':  struct{}{},
+	'/':  struct{}{},
+	'\'': struct{}{},
+	'"':  struct{}{},
+	'!':  struct{}{},
+	'@':  struct{}{},
+	'#':  struct{}{},
+}
+
 // Calculates byte frequences for a bytestring.
 func byteFrequencies(in []byte) map[byte]float64 {
 	freqs := map[byte]float64{}
@@ -57,13 +72,19 @@ func englishness(in []byte) float64 {
 
 	freqs := byteFrequencies(in)
 
-	for c, x := range freqs {
-		f, ok := letterFrequencies[c]
-		if !ok {
-			score += 1
-		} else {
-			score += (f - x) * (f - x)
+	// Add in all the english characters so we definitely count them.
+	for c, _ := range letterFrequencies {
+		if _, ok := freqs[c]; !ok {
+			freqs[c] = 0
 		}
+	}
+
+	for c, f := range freqs {
+		x, ok := letterFrequencies[c]
+		if !ok {
+			x = 0
+		}
+		score += math.Exp(math.Abs(f - x))
 	}
 
 	return score

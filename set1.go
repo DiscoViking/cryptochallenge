@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math"
@@ -24,6 +25,8 @@ var set1 = []func() bool{
 	set1_2,
 	set1_3,
 	set1_4,
+	set1_5,
+	set1_6,
 }
 
 // Set 1 Challenge 1
@@ -120,7 +123,7 @@ func set1_3() bool {
 		return false
 	}
 
-	bestBytes, _, err := crackSingleByteXor(cipherbytes)
+	bestBytes, _, _, err := crackSingleByteXor(cipherbytes)
 	if err != nil {
 		fmt.Println("Failed to crack: ", err)
 		return false
@@ -162,7 +165,7 @@ func set1_4() bool {
 		}
 
 		lnum++
-		candidate, score, err := crackSingleByteXor(cipherbytes)
+		candidate, _, score, err := crackSingleByteXor(cipherbytes)
 		if err != nil {
 			fmt.Println("Failed to crack: ", err)
 			return false
@@ -178,6 +181,103 @@ func set1_4() bool {
 	plaintext := string(bestBytes)
 	fmt.Println("Ciphertext was on line ", bestLine)
 	fmt.Println("Plaintext: ", plaintext)
+
+	return true
+}
+
+// Set 1 Challenge 5
+//
+// Implement repeating-key XOR
+// Here is the opening stanza of an important work of the English language:
+//
+// Burning 'em, if you ain't quick and nimble
+// I go crazy when I hear a cymbal
+// Encrypt it, under the key "ICE", using repeating-key XOR.
+//
+// In repeating-key XOR, you'll sequentially apply each byte of the key;
+// the first byte of plaintext will be XOR'd against I, the next C, the next E,
+// then I again for the 4th byte, and so on.
+//
+// It should come out to:
+//
+// 0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272
+// a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f
+// Encrypt a bunch of stuff using your repeating-key XOR function.
+// Encrypt your mail. Encrypt your password file. Your .sig file.
+// Get a feel for it. I promise, we aren't wasting your time with this.
+func set1_5() bool {
+	plaintext := `Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal`
+	plainbytes := []byte(plaintext)
+	key := []byte("ICE")
+	expected := `0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f`
+
+	cipherbytes, err := repeatingKeyXor(key, plainbytes)
+	if err != nil {
+		fmt.Println("Failed to encrypt: ", err)
+		return false
+	}
+
+	ciphertext := hex.EncodeToString(cipherbytes)
+
+	if ciphertext != expected {
+		fmt.Println("Wrong output: ", string(ciphertext))
+		return false
+	}
+
+	return true
+}
+
+// Set 1 Challenge 6
+//
+// Break repeating-key XOR
+// It is officially on, now.
+// This challenge isn't conceptually hard, but it involves actual error-prone coding. The other challenges in this set are there to bring you up to speed. This one is there to qualify you. If you can do this one, you're probably just fine up to Set 6.
+//
+// There's a file here. It's been base64'd after being encrypted with repeating-key XOR.
+//
+// Decrypt it.
+func set1_6() bool {
+	file, err := os.Open("./data/6.txt")
+	if err != nil {
+		fmt.Println("Failed to open file: ", err)
+		return false
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		fmt.Println("Failed to stat file: ", err)
+		return false
+	}
+
+	size := info.Size()
+	buf := make([]byte, size)
+
+	n, err := file.Read(buf)
+	if err != nil {
+		fmt.Println("Failed to read file: ", err)
+		return false
+	}
+
+	if int64(n) != size {
+		fmt.Println("Only read ", n, " bytes of ", size)
+		return false
+	}
+
+	cipherbytes, err := base64.StdEncoding.DecodeString(string(buf))
+	if err != nil {
+		fmt.Println("Failed to decode base64: ", err)
+		return false
+	}
+
+	plainbytes, key, err := crackRepeatingKeyXor(cipherbytes)
+	if err != nil {
+		fmt.Println("Failed to crack: ", err)
+		return false
+	}
+
+	fmt.Println("Found key: ", string(key))
+	fmt.Println("Plaintext: ", string(plainbytes))
 
 	return true
 }
