@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/hex"
 	"fmt"
 	"math"
+	"os"
 )
 
 // Crypto Challenge Set 1
@@ -22,6 +23,7 @@ var set1 = []func() bool{
 	set1_1,
 	set1_2,
 	set1_3,
+	set1_4,
 }
 
 // Set 1 Challenge 1
@@ -118,30 +120,63 @@ func set1_3() bool {
 		return false
 	}
 
+	bestBytes, _, err := crackSingleByteXor(cipherbytes)
+	if err != nil {
+		fmt.Println("Failed to crack: ", err)
+		return false
+	}
+
+	plaintext := string(bestBytes)
+	fmt.Println("Plaintext: ", plaintext)
+
+	return true
+}
+
+// Set 1 Challenge 4
+//
+// Detect single-character XOR
+// One of the 60-character strings in this file has been encrypted by single-character XOR.
+//
+// Find it.
+//
+// (Your code from #3 should help.)
+func set1_4() bool {
+	file, err := os.Open("./data/4.txt")
+	if err != nil {
+		fmt.Println("Failed to open file: ", err)
+		return false
+	}
+
+	s := bufio.NewScanner(file)
+
 	var bestBytes []byte
 	var bestScore float64 = math.MaxFloat64
-	key := make([]byte, len(cipherbytes))
-
-	for b := byte(0); b < 255; b++ {
-		for i := range key {
-			key[i] = b
-		}
-
-		candidate, err := xorBytes(cipherbytes, key)
+	lnum := 0
+	bestLine := 0
+	for s.Scan() {
+		line := s.Text()
+		cipherbytes, err := hex.DecodeString(line)
 		if err != nil {
-			fmt.Println("Failed to xor: ", err)
+			fmt.Println("Failed to decode hex: ", err)
 			return false
 		}
 
-		score := englishness(bytes.ToLower(candidate))
+		lnum++
+		candidate, score, err := crackSingleByteXor(cipherbytes)
+		if err != nil {
+			fmt.Println("Failed to crack: ", err)
+			return false
+		}
+
 		if score < bestScore {
-			fmt.Println(score, ": ", string(candidate))
+			bestLine = lnum
 			bestBytes = candidate
 			bestScore = score
 		}
 	}
 
 	plaintext := string(bestBytes)
+	fmt.Println("Ciphertext was on line ", bestLine)
 	fmt.Println("Plaintext: ", plaintext)
 
 	return true
