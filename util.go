@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 )
 
 // Converts a hex string to a base64 encoded one.
@@ -57,7 +56,7 @@ func repeatingKeyXor(key, input []byte) ([]byte, error) {
 // Cracks a single byte Xor cipher.
 func crackSingleByteXor(cipherbytes []byte) ([]byte, byte, float64, error) {
 	var bestBytes []byte
-	var bestScore float64 = math.MaxFloat64
+	var bestScore float64 = 0
 	var bestKey byte = 0
 
 	for b := byte(0); b < 255; b++ {
@@ -67,8 +66,8 @@ func crackSingleByteXor(cipherbytes []byte) ([]byte, byte, float64, error) {
 		}
 
 		score := englishness(bytes.ToLower(candidate))
-		fmt.Println(hex.EncodeToString([]byte{b}), ":", score, ": ", string(candidate))
-		if score < bestScore {
+		//fmt.Println(hex.EncodeToString([]byte{b}), ":", score, ": ", string(candidate))
+		if score > bestScore {
 			bestBytes = candidate
 			bestScore = score
 			bestKey = b

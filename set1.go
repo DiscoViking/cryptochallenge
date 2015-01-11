@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"os"
 )
 
@@ -153,7 +152,7 @@ func set1_4() bool {
 	s := bufio.NewScanner(file)
 
 	var bestBytes []byte
-	var bestScore float64 = math.MaxFloat64
+	var bestScore float64 = 0
 	lnum := 0
 	bestLine := 0
 	for s.Scan() {
@@ -171,7 +170,7 @@ func set1_4() bool {
 			return false
 		}
 
-		if score < bestScore {
+		if score > bestScore {
 			bestLine = lnum
 			bestBytes = candidate
 			bestScore = score

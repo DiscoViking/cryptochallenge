@@ -84,7 +84,7 @@ func englishness(in []byte) float64 {
 		if !ok {
 			x = 0
 		}
-		score += math.Exp(math.Abs(f - x))
+		score += math.Sqrt(f * x)
 	}
 
 	return score
