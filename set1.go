@@ -26,6 +26,7 @@ var set1 = []func() bool{
 	set1_5,
 	set1_6,
 	set1_7,
+	set1_8,
 }
 
 // Set 1 Challenge 1
@@ -282,5 +283,65 @@ func set1_7() bool {
 	plaintext := string(plainbytes)
 	fmt.Println("Plaintext:", plaintext)
 
+	return true
+}
+
+// Set 1 Challenge 8
+// Detect AES in ECB mode
+// In this file are a bunch of hex-encoded ciphertexts.
+//
+// One of them has been encrypted with ECB.
+//
+// Detect it.
+//
+// Remember that the problem with ECB is that it is stateless and deterministic;
+// the same 16 byte plaintext block will always produce the same 16 byte ciphertext.
+func set1_8() bool {
+	file, err := os.Open("./data/8.txt")
+	if err != nil {
+		fmt.Println("Failed to open file: ", err)
+		return false
+	}
+
+	s := bufio.NewScanner(file)
+
+	lnum := 0
+	bestLine := 0
+	var bestScore float64 = 16 * 8 // Worst possible score.
+	for s.Scan() {
+		lnum++
+		line := s.Text()
+		bytes, err := hex.DecodeString(line)
+		if err != nil {
+			fmt.Println("Failed to decode hex: ", err)
+			return false
+		}
+
+		var score float64 = 0
+		blocks := len(bytes) / 16
+		shifted := bytes
+		for i := 0; i < blocks; i++ {
+			// Shift by one block.
+			shifted = append(shifted[16:], shifted[:16]...)
+
+			h, err := hammingDistance(shifted, bytes)
+			if err != nil {
+				fmt.Println("Failed to calculate hamming distance:", err)
+				return false
+			}
+
+			score += float64(h)
+		}
+		score /= float64(blocks * blocks)
+
+		//fmt.Println(lnum, "-", score)
+
+		if score < bestScore {
+			bestScore = score
+			bestLine = lnum
+		}
+	}
+
+	fmt.Println("AES_ECB on line:", bestLine)
 	return true
 }
