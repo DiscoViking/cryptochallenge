@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -26,6 +25,7 @@ var set1 = []func() bool{
 	set1_4,
 	set1_5,
 	set1_6,
+	set1_7,
 }
 
 // Set 1 Challenge 1
@@ -237,35 +237,9 @@ I go crazy when I hear a cymbal`
 //
 // Decrypt it.
 func set1_6() bool {
-	file, err := os.Open("./data/6.txt")
+	cipherbytes, err := readBase64File("./data/6.txt")
 	if err != nil {
-		fmt.Println("Failed to open file: ", err)
-		return false
-	}
-
-	info, err := file.Stat()
-	if err != nil {
-		fmt.Println("Failed to stat file: ", err)
-		return false
-	}
-
-	size := info.Size()
-	buf := make([]byte, size)
-
-	n, err := file.Read(buf)
-	if err != nil {
-		fmt.Println("Failed to read file: ", err)
-		return false
-	}
-
-	if int64(n) != size {
-		fmt.Println("Only read ", n, " bytes of ", size)
-		return false
-	}
-
-	cipherbytes, err := base64.StdEncoding.DecodeString(string(buf))
-	if err != nil {
-		fmt.Println("Failed to decode base64: ", err)
+		fmt.Print(err.Error())
 		return false
 	}
 
@@ -277,6 +251,36 @@ func set1_6() bool {
 
 	fmt.Println("Found key: ", string(key))
 	fmt.Println("Plaintext: ", string(plainbytes))
+
+	return true
+}
+
+// Set 1 Challenge 7
+// AES in ECB mode
+// The Base64-encoded content in this file has been encrypted via AES-128 in ECB mode under the key
+//
+// "YELLOW SUBMARINE".
+// (case-sensitive, without the quotes; exactly 16 characters; I like "YELLOW SUBMARINE" because it's exactly 16 bytes long, and now you do too).
+//
+// Decrypt it. You know the key, after all.
+//
+// Easiest way: use OpenSSL::Cipher and give it AES-128-ECB as the cipher.
+func set1_7() bool {
+	key := []byte("YELLOW SUBMARINE")
+	cipherbytes, err := readBase64File("./data/7.txt")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	plainbytes, err := decryptAesEcb(cipherbytes, key)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	plaintext := string(plainbytes)
+	fmt.Println("Plaintext:", plaintext)
 
 	return true
 }

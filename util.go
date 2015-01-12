@@ -4,10 +4,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 )
 
 // Converts a hex string to a base64 encoded one.
@@ -224,4 +226,59 @@ func crackRepeatingKeyXor(cipherbytes []byte) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 	return plainbytes, key, nil
+}
+
+// Decrypt AES in ECB mode.
+func decryptAesEcb(cipherbytes, key []byte) ([]byte, error) {
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	bs := c.BlockSize()
+	if len(cipherbytes)%bs != 0 {
+		return nil, errors.New("length of input must be multiple of blocksize.")
+	}
+
+	plainbytes := make([]byte, len(cipherbytes))
+	p := plainbytes[:]
+	for len(cipherbytes) > 0 {
+		c.Decrypt(p, cipherbytes)
+		p = p[bs:]
+		cipherbytes = cipherbytes[bs:]
+	}
+
+	return plainbytes, nil
+}
+
+// Read a base64 encoded file and decode into bytes.
+func readBase64File(f string) ([]byte, error) {
+	file, err := os.Open(f)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to open file: ", err))
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to stat file: ", err))
+	}
+
+	size := info.Size()
+	buf := make([]byte, size)
+
+	n, err := file.Read(buf)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to read file: ", err))
+	}
+
+	if int64(n) != size {
+		return nil, errors.New(fmt.Sprintf("only read %v bytes out of %v", n, size))
+	}
+
+	bytes, err := base64.StdEncoding.DecodeString(string(buf))
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Failed to decode base64: %v", err))
+	}
+
+	return bytes, nil
 }
